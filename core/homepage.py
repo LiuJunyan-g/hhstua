@@ -51,25 +51,28 @@ class FiveView(APIView):
         city_data['citys'] = citys
         if city:
             condition['city'] = city
-        # print(city)
+        # 获取团队信息
         teams = Team.objects.filter(**condition).order_by('-id')[(page - 1) * 5:(page - 1) * 5 + 5]
-        print(type(teams))
-        data_teachers = {}
-        for team in teams:
-            teachers = Teacher.objects.filter(team_id=team.id)
+        team_teachers = []
+        for team_teacher in teams:
+            info = {'id': team_teacher.id,
+                    'name': team_teacher.name,
+                    'county': team_teacher.county
+                    }
             teacher_list = []
+            # 查询到该团队下的所有老师
+            teachers = Teacher.objects.filter(team_id=team_teacher.id)
             for teacher in teachers:
-                # print(dict(teacher))
-                teacher_info = {'name':teacher.name, 'sex':teacher.sex}
+                teacher_info = {'name': teacher.name, 'sex': teacher.sex}
                 teacher_list.append(teacher_info)
-
-            data_teachers[team.name] = teacher_list
-        count = Team.objects.filter(**condition).count()
-        team_data = TeamSerializer(teams, many=True)
-        return Response({'data_year_count': five_count,
-                         'city_data': city_data,
-                         'data_top_ten_count': top_ten_count,
-                         'team_data': team_data.data,
-                         'data_teachers': data_teachers,
-                         'count': count,
+            info['teacher_list'] = teacher_list
+            team_teachers.append(info)
+        # print(team_teachers)
+        # 该市所有团队的数量，默认全部团队
+        team_count = Team.objects.filter(**condition).count()
+        return Response({'data_year_count': five_count,  # 近五年数据
+                         'city_data': city_data,  # 所有城市
+                         'data_top_ten_count': top_ten_count,  # 专业前十
+                         'team_data': team_teachers,  # 所有团队信息
+                         'team_count': team_count,  # 团队数量
                          'result': '1', 'message': '获取成功'})
